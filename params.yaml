@@ -1,0 +1,28 @@
+# ── Data collection ────────────────────────────────────────────────────────────
+locations:
+  technopark:
+    lat: 8.5574
+    lon: 76.8800
+  thampanoor:
+    lat: 8.4875
+    lon: 76.9525
+
+data:
+  initial_months: 6        # months of historical data to fetch on first run
+  variables:
+    - temperature_2m
+    - relative_humidity_2m
+    - precipitation
+    - wind_speed_10m
+
+# ── Model hyperparameters ───────────────────────────────────────────────────────
+model:
+  lstm_units:    64
+  dropout:       0.2
+  lookback:      48         # hours of history fed to LSTM
+  horizon:       24         # hours ahead to predict
+  epochs:        30
+  patience:      5          # early-stopping patience
+  batch_size:    32
+  learning_rate: 0.001
+  train_ratio:   0.80

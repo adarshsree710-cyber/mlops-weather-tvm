@@ -1,0 +1,63 @@
+name: Daily Weather Pipeline
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 01:00 UTC every day (06:30 IST)
+  workflow_dispatch:        # allow manual trigger from the Actions tab
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout with full history ──────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GIT_TOKEN }}
+
+      # ── 2. Set up Python ───────────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 3. Configure DVC Google Drive remote ──────────────────────────────
+      - name: Configure DVC remote credentials
+        env:
+          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+        run: |
+          echo "$GDRIVE_CREDENTIALS_DATA" | base64 --decode > /tmp/gdrive_creds.json
+          dvc remote modify myremote gdrive_use_service_account true
+          dvc remote modify myremote gdrive_service_account_json_file_path /tmp/gdrive_creds.json
+
+      # ── 4. Pull latest data & model artifacts ─────────────────────────────
+      - name: Pull DVC artifacts
+        run: dvc pull --run-cache
+
+      # ── 5. Run the pipeline (only changed stages execute) ─────────────────
+      - name: Run DVC pipeline
+        run: dvc repro
+
+      # ── 6. Push new artifacts to Google Drive ─────────────────────────────
+      - name: Push DVC artifacts
+        run: dvc push
+
+      # ── 7. Commit updated metadata to Git ─────────────────────────────────
+      - name: Commit pipeline outputs
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add dvc.lock metrics.json version.json
+          git diff --cached --quiet || git commit -m "chore: daily retrain $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
+
+      # ── 8. Streamlit Community Cloud auto-deploys on the push above ───────
+      # No explicit step needed — Streamlit watches the main branch.

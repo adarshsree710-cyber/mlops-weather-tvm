@@ -1,0 +1,32 @@
+schema: '2.0'
+stages:
+  collect:
+    cmd: python src/collect.py
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 6cbad77403545fae1f237f15a259dfd9
+      size: 994
+    - path: src/collect.py
+      hash: md5
+      md5: 44fd767e42e079067f96492317dd3000
+      size: 4402
+    params:
+      params.yaml:
+        data.initial_months: 6
+        locations:
+          technopark:
+            lat: 8.5574
+            lon: 76.88
+          thampanoor:
+            lat: 8.4875
+            lon: 76.9525
+    outs:
+    - path: data/raw/technopark.csv
+      hash: md5
+      md5: 1aa2309216562fe64cf615c434d3e96f
+      size: 161019
+    - path: data/raw/thampanoor.csv
+      hash: md5
+      md5: 8b9a5e86652b4937bb234a022ab3c073
+      size: 161361

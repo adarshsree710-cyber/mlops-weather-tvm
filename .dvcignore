@@ -1,0 +1,6 @@
+# DVC should not track these
+.git
+.github
+__pycache__
+*.pyc
+.env
